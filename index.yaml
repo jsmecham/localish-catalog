@@ -1,0 +1,14 @@
+# The catalog index — the entire discovery API. One entry per service;
+# `manifest` is repo-relative. Localish fetches this file to render its
+# Add Service list, then fetches the chosen manifest.
+services:
+  - slug: memory
+    name: Memory
+    description: Persistent knowledge-graph memory — each household member gets their own private graph.
+    transport: stdio
+    manifest: services/memory/manifest.yaml
+  - slug: everything
+    name: Everything (Reference)
+    description: The MCP reference server — every protocol feature, for testing clients and the platform.
+    transport: stdio
+    manifest: services/everything/manifest.yaml

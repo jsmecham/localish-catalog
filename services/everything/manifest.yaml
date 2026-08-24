@@ -1,0 +1,10 @@
+everything:
+  contractVersion: 1
+  transport: stdio
+  command: [ "npx", "-y", "@modelcontextprotocol/server-everything" ]
+  scopes: [ "everything:use" ]
+  credentialFields: []
+  healthTool:
+    name: echo
+    arguments:
+      message: localish-health

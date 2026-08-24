@@ -1,0 +1,14 @@
+memory:
+  contractVersion: 1
+  transport: stdio
+  command: [ "npx", "-y", "@modelcontextprotocol/server-memory" ]
+  scopes: [ "memory:use" ]
+  credentialFields: []
+  env:
+    MEMORY_FILE_PATH: /data/memory.json
+  volumes:
+    - name: data
+      containerPath: /data
+  healthTool:
+    name: read_graph
+    arguments: {}
