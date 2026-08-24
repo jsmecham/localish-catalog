@@ -1,0 +1,31 @@
+unifi:
+  contractVersion: 1
+  image: ghcr.io/sirkirby/unifi-network-mcp:0.27.1@sha256:91f2a5f2f63b721e17606d8a47270a809c11bdf731497ebaf255caf39cc150ab
+  containerPort: 3000
+  scopes: [ "unifi:read" ]
+  credentialFields: []
+  shared: true
+  settings:
+    - key: UNIFI_NETWORK_HOST
+      label: "UniFi controller address"
+      required: true
+  secrets:
+    - UNIFI_NETWORK_USERNAME
+    - UNIFI_NETWORK_PASSWORD
+  env:
+    UNIFI_NETWORK_VERIFY_SSL: "false"
+    UNIFI_MCP_HTTP_ENABLED: "true"
+    UNIFI_MCP_HTTP_TRANSPORT: "streamable-http"
+    UNIFI_MCP_HOST: "0.0.0.0"
+    UNIFI_MCP_PORT: "3000"
+    UNIFI_MCP_LOG_LEVEL: "WARNING"
+    UNIFI_MCP_ALLOWED_HOSTS: "${LOCALISH_HOST},${LOCALISH_HOST}:8443,localhost,127.0.0.1"
+    UNIFI_NETWORK_TOOL_PERMISSION_MODE: "confirm"
+    UNIFI_POLICY_NETWORK_CREATE: "false"
+    UNIFI_POLICY_NETWORK_UPDATE: "false"
+    UNIFI_POLICY_NETWORK_DELETE: "false"
+  healthTool:
+    name: unifi_execute
+    arguments:
+      tool: unifi_list_devices
+      arguments: {}

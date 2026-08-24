@@ -7,6 +7,11 @@ services:
     description: Persistent knowledge-graph memory — each household member gets their own private graph.
     transport: stdio
     manifest: services/memory/manifest.yaml
+  - slug: unifi
+    name: UniFi Network
+    description: Query and manage a UniFi Network controller — one shared container, read-only by default.
+    transport: http
+    manifest: services/unifi/manifest.yaml
   - slug: everything
     name: Everything (Reference)
     description: The MCP reference server — every protocol feature, for testing clients and the platform.

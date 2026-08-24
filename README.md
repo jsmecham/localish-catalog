@@ -23,6 +23,7 @@ localish add https://raw.githubusercontent.com/jsmecham/localish-catalog/main/se
 | Service | Transport | Description |
 |---|---|---|
 | [memory](services/memory) | stdio | Per-member persistent knowledge-graph memory |
+| [unifi](services/unifi) | http | UniFi Network controller — shared, read-only defaults |
 | [everything](services/everything) | stdio | MCP reference server (testing/demo) |
 
 ## Contributing
