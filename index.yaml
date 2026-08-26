@@ -7,6 +7,11 @@ services:
     description: Persistent knowledge-graph memory — each household member gets their own private graph.
     transport: stdio
     manifest: services/memory/manifest.yaml
+  - slug: monarch
+    name: Monarch Money
+    description: Accounts, transactions, budgets, rules, and category management — per-member sessions.
+    transport: stdio
+    manifest: services/monarch/manifest.yaml
   - slug: unifi
     name: UniFi Network
     description: Query and manage a UniFi Network controller — one shared container, read-only by default.

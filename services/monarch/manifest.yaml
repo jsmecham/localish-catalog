@@ -1,0 +1,58 @@
+monarch:
+  contractVersion: 1
+  transport: stdio
+  command:
+    - uvx
+    - --from
+    - git+https://github.com/robcerda/monarch-mcp-server@ca6c1598c99a0ff1f7b7effbb2c9f518224eab44
+    - --with
+    - mcp[cli]>=1.10.0,<2
+    - monarch-mcp-server
+  scopes: [ "monarch:read", "monarch:write" ]
+  env:
+    # Session fallback file is Path.home()/.monarch-mcp-server/token — HOME
+    # on the volume keeps each member's session across restarts, and the
+    # fail backend skips keyring probing (containers have none).
+    HOME: /data
+    PYTHON_KEYRING_BACKEND: keyring.backends.fail.Keyring
+  volumes:
+    - name: data
+      containerPath: /data
+  startupSeconds: 240
+  credentialFields:
+    - name: cookie
+      label: "Monarch cookie header (app.monarch.com → DevTools → Network → any graphql request → Request Headers → cookie)"
+      secret: true
+  credentialSetup:
+    # Upstream's auth_from_cookie.py, inlined until it ships as a console
+    # script: verify-then-save against the real Monarch API.
+    command:
+      - uvx
+      - --from
+      - git+https://github.com/robcerda/monarch-mcp-server@ca6c1598c99a0ff1f7b7effbb2c9f518224eab44
+      - --with
+      - mcp[cli]>=1.10.0,<2
+      - python
+      - -c
+      - |
+        import asyncio, json, sys
+        from monarch_mcp_server.monarch_auth import login_with_browser_cookies
+        from monarch_mcp_server.secure_session import secure_session
+        async def main():
+            try:
+                fields = json.loads(sys.stdin.read())
+            except json.JSONDecodeError:
+                sys.exit("malformed credential payload")
+            cookie = (fields.get("cookie") or "").replace("\r", "").replace("\n", "").strip()
+            if not cookie:
+                sys.exit("no cookie provided")
+            if "=" not in cookie:
+                sys.exit("that does not look like a cookie header")
+            mm = await login_with_browser_cookies(cookie)
+            accounts = await mm.get_accounts()
+            secure_session.save_authenticated_session(mm)
+            print(f"ok: {len(accounts.get('accounts', []))} accounts, session saved")
+        asyncio.run(main())
+  healthTool:
+    name: get_accounts
+    arguments: {}
