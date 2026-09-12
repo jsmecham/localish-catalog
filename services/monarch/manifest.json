@@ -1,0 +1,52 @@
+{
+  "monarch": {
+    "contractVersion": 1,
+    "transport": "stdio",
+    "command": [
+      "uvx",
+      "--from",
+      "git+https://github.com/robcerda/monarch-mcp-server@ca6c1598c99a0ff1f7b7effbb2c9f518224eab44",
+      "--with",
+      "mcp[cli]>=1.10.0,<2",
+      "monarch-mcp-server"
+    ],
+    "scopes": [
+      "monarch:read",
+      "monarch:write"
+    ],
+    "env": {
+      "HOME": "/data",
+      "PYTHON_KEYRING_BACKEND": "keyring.backends.fail.Keyring"
+    },
+    "volumes": [
+      {
+        "name": "data",
+        "containerPath": "/data"
+      }
+    ],
+    "startupSeconds": 240,
+    "credentialFields": [
+      {
+        "name": "cookie",
+        "label": "Monarch cookie header (app.monarch.com → DevTools → Network → any graphql request → Request Headers → cookie)",
+        "secret": true
+      }
+    ],
+    "credentialSetup": {
+      "command": [
+        "uvx",
+        "--from",
+        "git+https://github.com/robcerda/monarch-mcp-server@ca6c1598c99a0ff1f7b7effbb2c9f518224eab44",
+        "--with",
+        "mcp[cli]>=1.10.0,<2",
+        "python",
+        "-c",
+        "import asyncio, json, sys\nfrom monarch_mcp_server.monarch_auth import login_with_browser_cookies\nfrom monarch_mcp_server.secure_session import secure_session\nasync def main():\n    try:\n        fields = json.loads(sys.stdin.read())\n    except json.JSONDecodeError:\n        sys.exit(\"malformed credential payload\")\n    cookie = (fields.get(\"cookie\") or \"\").replace(\"\\r\", \"\").replace(\"\\n\", \"\").strip()\n    if not cookie:\n        sys.exit(\"no cookie provided\")\n    if \"=\" not in cookie:\n        sys.exit(\"that does not look like a cookie header\")\n    mm = await login_with_browser_cookies(cookie)\n    accounts = await mm.get_accounts()\n    secure_session.save_authenticated_session(mm)\n    print(f\"ok: {len(accounts.get('accounts', []))} accounts, session saved\")\nasyncio.run(main())\n"
+      ]
+    },
+    "healthTool": {
+      "name": "get_accounts",
+      "arguments": {}
+    }
+  }
+}

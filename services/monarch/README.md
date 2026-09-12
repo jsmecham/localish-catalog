@@ -12,3 +12,9 @@ real API before saving, and the session persists in your instance's `data` volum
 
 Pinned to an upstream commit with `mcp<2` constrained (the 2.x Python SDK renamed
 FastMCP; upstream declares no upper bound yet).
+
+The guest sets `HOME` to `/data` so the session fallback file at
+`.monarch-mcp-server/token` persists on the member's volume. The fail keyring backend
+avoids probing keychain services inside the container. Credential setup embeds
+the upstream cookie-authentication routine because it has no console entry point;
+it verifies the cookie against Monarch before saving the session.
