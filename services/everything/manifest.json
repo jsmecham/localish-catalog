@@ -1,5 +1,6 @@
 {
   "everything": {
+    "displayName": "Everything (Reference)",
     "contractVersion": 1,
     "transport": "stdio",
     "command": [

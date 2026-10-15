@@ -1,5 +1,6 @@
 {
   "unifi": {
+    "displayName": "UniFi Network",
     "contractVersion": 1,
     "image": "ghcr.io/sirkirby/unifi-network-mcp:0.27.1@sha256:91f2a5f2f63b721e17606d8a47270a809c11bdf731497ebaf255caf39cc150ab",
     "containerPort": 3000,
