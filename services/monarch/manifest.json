@@ -1,5 +1,6 @@
 {
   "monarch": {
+    "displayName": "Monarch Money",
     "contractVersion": 1,
     "transport": "stdio",
     "command": [

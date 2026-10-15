@@ -20,6 +20,9 @@ the secret names it wants — and confirm. Or from the terminal:
 localish add https://raw.githubusercontent.com/jsmecham/localish-catalog/main/services/memory/manifest.json
 ```
 
+Installed services pick up manifest display names through **Check for Updates**.
+Review and apply the update, then restart Localish to load the saved definition.
+
 ## What's here
 
 | Service | Transport | Description |

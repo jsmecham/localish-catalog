@@ -10,6 +10,10 @@ A catalog entry is a directory under `services/<slug>/` containing:
 
 Plus one entry in the root `index.json`.
 
+Set the manifest’s `displayName` to the service’s human-readable name, preserving
+its spelling and capitalization. Match the catalog entry’s `name`. Keep the slug
+stable: URLs, authorization, and stored service state use it.
+
 ## Review rules
 
 These are what a PR review checks, because they are what an operator's install preview

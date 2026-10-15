@@ -1,5 +1,6 @@
 {
   "memory": {
+    "displayName": "Memory",
     "contractVersion": 1,
     "transport": "stdio",
     "command": [
