@@ -14,6 +14,11 @@ Set the manifest’s `displayName` to the service’s human-readable name, prese
 its spelling and capitalization. Match the catalog entry’s `name`. Keep the slug
 stable: URLs, authorization, and stored service state use it.
 
+Optional `icon` artwork is a `data:image/png;base64,…` string containing one PNG
+image, at most 64 KiB decoded and 512 pixels per side. Use square artwork and
+record its source in the service README. Keep the full manifest within 256 KiB.
+Clients show a monogram when artwork is omitted.
+
 ## Review rules
 
 These are what a PR review checks, because they are what an operator's install preview

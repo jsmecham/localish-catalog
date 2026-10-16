@@ -18,3 +18,7 @@ The guest sets `HOME` to `/data` so the session fallback file at
 avoids probing keychain services inside the container. Credential setup embeds
 the upstream cookie-authentication routine because it has no console entry point;
 it verifies the cookie against Monarch before saving the session.
+
+## Icon
+
+The manifest embeds the PNG from the [official site icon](https://www.monarch.com/apple-touch-icon.png).
