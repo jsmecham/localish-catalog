@@ -17,7 +17,7 @@
     {
       "slug": "unifi",
       "name": "UniFi Network",
-      "description": "Query and manage a UniFi Network controller — one shared container, read-only by default.",
+      "description": "Query and manage a UniFi Network controller with your own account — read-only by default.",
       "transport": "http",
       "manifest": "services/unifi/manifest.json"
     },

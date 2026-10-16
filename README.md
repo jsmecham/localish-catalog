@@ -8,7 +8,7 @@ Each entry is one reviewed manifest file in the
 format. There is no registry service and nothing to host: Localish installs straight from
 this repo's raw files, and `index.json` is the whole API.
 
-The catalog uses Localish's [JSON document format](https://github.com/jsmecham/Localish/blob/main/Docs/Decisions/0039-foundation-document-formats.md).
+The catalog uses Localish's [JSON document format](https://github.com/jsmecham/Localish/blob/main/Docs/Decisions/0034-foundation-document-formats.md).
 
 ## Installing a service
 
@@ -20,7 +20,7 @@ the secret names it wants — and confirm. Or from the terminal:
 localish add https://raw.githubusercontent.com/jsmecham/localish-catalog/main/services/memory/manifest.json
 ```
 
-Installed services pick up manifest display names through **Check for Updates**.
+Installed services pick up manifest display names and icons through **Check for Updates**.
 Review and apply the update, then restart Localish to load the saved definition.
 
 ## What's here
@@ -29,7 +29,7 @@ Review and apply the update, then restart Localish to load the saved definition.
 |---|---|---|
 | [memory](services/memory) | stdio | Per-member persistent knowledge-graph memory |
 | [monarch](services/monarch) | stdio | Monarch Money — transactions, budgets, rules, categories |
-| [unifi](services/unifi) | http | UniFi Network controller — shared, read-only defaults |
+| [unifi](services/unifi) | http | UniFi Network controller — per-member accounts, read-only defaults |
 | [everything](services/everything) | stdio | MCP reference server (testing/demo) |
 
 ## Contributing
