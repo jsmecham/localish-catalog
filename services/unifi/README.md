@@ -3,6 +3,10 @@
 [sirkirby/unifi-network-mcp](https://github.com/sirkirby/unifi-network-mcp): query and
 manage a UniFi Network controller — devices, clients, networks, firewall.
 
+The manifest pins the image selected for upstream version 0.27.1 by its SHA-256
+digest. The reference omits the version tag to match Localish's image contract;
+the digest identifies the executable contents.
+
 Each member receives a **private instance** connected to the household's controller.
 Configure the controller address once after installation. Each member enters their
 own local UniFi username and password during connection; Localish stores those
