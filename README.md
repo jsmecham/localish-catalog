@@ -22,6 +22,8 @@ localish add https://raw.githubusercontent.com/jsmecham/localish-catalog/main/se
 
 Installed services pick up manifest display names and icons through **Check for Updates**.
 Review and apply the update, then restart Localish to load the saved definition.
+The catalog index includes each service's available artwork for Add Service;
+clients that support catalog icons show it before manifest review.
 
 ## What's here
 
