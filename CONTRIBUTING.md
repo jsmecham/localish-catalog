@@ -18,6 +18,9 @@ Optional `icon` artwork is a `data:image/png;base64,…` string containing one P
 image, at most 64 KiB decoded and 512 pixels per side. Use square artwork and
 record its source in the service README. Keep the full manifest within 256 KiB.
 Clients show a monogram when artwork is omitted.
+Copy the manifest's `icon` into its `index.json` entry so the catalog list can show
+the same artwork without downloading each manifest. Keep the complete index,
+including icons, within 256 KiB.
 
 ## Review rules
 
