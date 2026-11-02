@@ -32,6 +32,7 @@ clients that support catalog icons show it before manifest review.
 | [memory](services/memory) | stdio | Per-member persistent knowledge-graph memory |
 | [monarch](services/monarch) | stdio | Monarch Money — transactions, budgets, rules, categories |
 | [unifi](services/unifi) | http | UniFi Network controller — per-member accounts, read-only defaults |
+| [polymarket](services/polymarket) | stdio | Read-only prediction-market research and public monitoring — no wallet required |
 | [everything](services/everything) | stdio | MCP reference server (testing/demo) |
 
 ## Contributing
