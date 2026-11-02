@@ -24,6 +24,13 @@
       "transport" : "http"
     },
     {
+      "description" : "Read-only prediction-market discovery, analysis, and public monitoring — no wallet required.",
+      "manifest" : "services/polymarket/manifest.json",
+      "name" : "Polymarket",
+      "slug" : "polymarket",
+      "transport" : "stdio"
+    },
+    {
       "description" : "The MCP reference server — every protocol feature, for testing clients and the platform.",
       "manifest" : "services/everything/manifest.json",
       "name" : "Everything (Reference)",

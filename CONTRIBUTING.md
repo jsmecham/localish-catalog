@@ -56,3 +56,8 @@ Run `python3 -B -m unittest discover -s scripts -p 'test_*.py'` and
 same checks on pull requests and main. These check image-reference syntax; they
 do not download images, validate the entire service contract, or prove that a
 service starts successfully.
+
+For Polymarket launcher changes, also run `python3 -B scripts/check_polymarket.py`
+with `uvx` available. CI runs this check with the guest's uv version. It downloads
+the manifest's pinned Python package, then tests the read-only boundary and MCP
+error handling without calling Polymarket or using wallet credentials.

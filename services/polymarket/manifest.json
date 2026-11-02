@@ -1,0 +1,35 @@
+{
+  "polymarket": {
+    "displayName": "Polymarket",
+    "contractVersion": 1,
+    "transport": "stdio",
+    "command": [
+      "uvx",
+      "--python",
+      "3.12",
+      "--from",
+      "git+https://github.com/caiovicentino/polymarket-mcp-server@21f65f319ff0fc4250ea1e5094581761906839e1",
+      "python",
+      "-c",
+      "import json\nimport os\n\nimport mcp.types as types\nfrom polymarket_mcp import server as upstream\n\n# Demo mode alone still creates API credentials in this upstream revision.\nos.environ[\"DEMO_MODE\"] = \"true\"\nos.environ[\"CANCEL_ON_SHUTDOWN\"] = \"false\"\noriginal_load_config = upstream.load_config\n\n\ndef load_readonly_config():\n    return original_load_config().model_copy(update={\n        \"POLYMARKET_API_KEY\": None,\n        \"POLYMARKET_API_SECRET\": None,\n        \"POLYMARKET_PASSPHRASE\": None,\n        \"POLYMARKET_API_KEY_NAME\": None,\n        \"ENABLE_AUTONOMOUS_TRADING\": False,\n    })\n\n\nasync def reject_credentials(self, *args, **kwargs):\n    raise RuntimeError(\"Wallet authentication is disabled in this Localish service\")\n\n\nupstream.server.name = \"polymarket-readonly\"\nupstream.load_config = load_readonly_config\nupstream.PolymarketClient.create_api_credentials = reject_credentials\npublic_tools = upstream.market_discovery.get_tools()\n# Upstream exposes a holder-analysis placeholder that requires authentication.\npublic_tools += [tool for tool in upstream.market_analysis.get_tools()\n                 if tool.name != \"get_market_holders\"]\npublic_realtime = {\n    \"subscribe_market_prices\", \"subscribe_orderbook_updates\",\n    \"subscribe_market_resolution\", \"get_realtime_status\", \"unsubscribe_realtime\",\n}\npublic_tools += [tool for tool in upstream.realtime.get_tools() if tool.name in public_realtime]\nallowed = {tool.name for tool in public_tools}\noriginal_call_tool = upstream.call_tool\n\n\n@upstream.server.list_tools()\nasync def list_tools():\n    return public_tools\n\n\n@upstream.server.call_tool()\nasync def call_tool(name, arguments):\n    # Enforce the boundary on direct calls too; hiding tools is not authorization.\n    if name not in allowed:\n        return types.CallToolResult(isError=True, content=[types.TextContent(\n            type=\"text\", text=\"This Localish service only supports public market research.\"\n        )])\n    content = await original_call_tool(name, arguments)\n    failed = False\n    for item in content:\n        if item.type != \"text\":\n            continue\n        try:\n            payload = json.loads(item.text)\n        except (ValueError, TypeError):\n            failed |= item.text.startswith(\"Error:\")\n        else:\n            failed |= isinstance(payload, dict) and (\n                \"error\" in payload or payload.get(\"success\") is False\n            )\n    # Localish health checks consume MCP isError, not JSON embedded in text.\n    return types.CallToolResult(content=content, isError=failed)\n\n\nif __name__ == \"__main__\":\n    upstream.run()\n"
+    ],
+    "scopes": [
+      "polymarket:read"
+    ],
+    "credentialFields": [],
+    "env": {
+      "DEMO_MODE": "true",
+      "ENABLE_AUTONOMOUS_TRADING": "false",
+      "CANCEL_ON_SHUTDOWN": "false",
+      "LOG_LEVEL": "WARNING"
+    },
+    "startupSeconds": 300,
+    "healthTool": {
+      "name": "get_trending_markets",
+      "arguments": {
+        "timeframe": "24h",
+        "limit": 1
+      }
+    }
+  }
+}
