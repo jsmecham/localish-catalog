@@ -51,11 +51,13 @@ isolation).
 
 ## Local checks
 
-Run `python3 -B -m unittest discover -s scripts -p 'test_*.py'` and
-`python3 -B scripts/check_images.py` before opening a PR. GitHub Actions runs the
-same checks on pull requests and main. These check image-reference syntax; they
-do not download images, validate the entire service contract, or prove that a
-service starts successfully.
+Run `python3 -B -m unittest discover -s scripts -p 'test_*.py'`,
+`python3 -B scripts/check_images.py`, and `python3 -B scripts/check_index.py` before
+opening a PR. GitHub Actions runs the same checks on pull requests and main. These
+check image-reference syntax and that `index.json` lists every manifest once with
+its slug, path, `displayName`, transport, and copied `icon`, within the document and
+icon limits above; they do not download images, decode icon pixels, validate the
+entire service contract, or prove that a service starts successfully.
 
 For Polymarket launcher changes, also run `python3 -B scripts/check_polymarket.py`
 with `uvx` available. CI runs this check with the guest's uv version. It downloads
