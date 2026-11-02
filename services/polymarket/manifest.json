@@ -11,25 +11,108 @@
       "git+https://github.com/caiovicentino/polymarket-mcp-server@21f65f319ff0fc4250ea1e5094581761906839e1",
       "python",
       "-c",
-      "import json\nimport os\n\nimport mcp.types as types\nfrom polymarket_mcp import server as upstream\n\n# Demo mode alone still creates API credentials in this upstream revision.\nos.environ[\"DEMO_MODE\"] = \"true\"\nos.environ[\"CANCEL_ON_SHUTDOWN\"] = \"false\"\noriginal_load_config = upstream.load_config\n\n\ndef load_readonly_config():\n    return original_load_config().model_copy(update={\n        \"POLYMARKET_API_KEY\": None,\n        \"POLYMARKET_API_SECRET\": None,\n        \"POLYMARKET_PASSPHRASE\": None,\n        \"POLYMARKET_API_KEY_NAME\": None,\n        \"ENABLE_AUTONOMOUS_TRADING\": False,\n    })\n\n\nasync def reject_credentials(self, *args, **kwargs):\n    raise RuntimeError(\"Wallet authentication is disabled in this Localish service\")\n\n\nupstream.server.name = \"polymarket-readonly\"\nupstream.load_config = load_readonly_config\nupstream.PolymarketClient.create_api_credentials = reject_credentials\npublic_tools = upstream.market_discovery.get_tools()\n# Upstream exposes a holder-analysis placeholder that requires authentication.\npublic_tools += [tool for tool in upstream.market_analysis.get_tools()\n                 if tool.name != \"get_market_holders\"]\npublic_realtime = {\n    \"subscribe_market_prices\", \"subscribe_orderbook_updates\",\n    \"subscribe_market_resolution\", \"get_realtime_status\", \"unsubscribe_realtime\",\n}\npublic_tools += [tool for tool in upstream.realtime.get_tools() if tool.name in public_realtime]\nallowed = {tool.name for tool in public_tools}\noriginal_call_tool = upstream.call_tool\n\n\n@upstream.server.list_tools()\nasync def list_tools():\n    return public_tools\n\n\n@upstream.server.call_tool()\nasync def call_tool(name, arguments):\n    # Enforce the boundary on direct calls too; hiding tools is not authorization.\n    if name not in allowed:\n        return types.CallToolResult(isError=True, content=[types.TextContent(\n            type=\"text\", text=\"This Localish service only supports public market research.\"\n        )])\n    content = await original_call_tool(name, arguments)\n    failed = False\n    for item in content:\n        if item.type != \"text\":\n            continue\n        try:\n            payload = json.loads(item.text)\n        except (ValueError, TypeError):\n            failed |= item.text.startswith(\"Error:\")\n        else:\n            failed |= isinstance(payload, dict) and (\n                \"error\" in payload or payload.get(\"success\") is False\n            )\n    # Localish health checks consume MCP isError, not JSON embedded in text.\n    return types.CallToolResult(content=content, isError=failed)\n\n\nif __name__ == \"__main__\":\n    upstream.run()\n"
+      "import asyncio\nimport json\nimport math\nimport os\n\nimport mcp.types as types\nfrom eth_account import Account\nfrom polymarket_mcp import server as upstream\nfrom polymarket_mcp.config import PolymarketConfig\n\n# A session or health probe ending must never cancel a member's open orders.\nos.environ['CANCEL_ON_SHUTDOWN'] = 'false'\nAPI_FIELDS = ('POLYMARKET_API_KEY', 'POLYMARKET_API_SECRET', 'POLYMARKET_PASSPHRASE')\nORDER_READS = {'suggest_order_price', 'get_order_status', 'get_open_orders', 'get_order_history'}\nPUBLIC_REALTIME = {'subscribe_market_prices', 'subscribe_orderbook_updates',\n                   'subscribe_market_resolution', 'get_realtime_status', 'unsubscribe_realtime'}\n\n\ndef enabled(name):\n    value = os.environ.get(name, 'false').lower()\n    if value not in {'true', 'false'}:\n        raise ValueError(name + ' must be true or false')\n    return value == 'true'\n\n\ndef load_config():\n    key = os.environ.get('POLYGON_PRIVATE_KEY', '').strip()\n    address = os.environ.get('POLYGON_ADDRESS', '').strip()\n    api = {name: os.environ.get(name) or None for name in API_FIELDS}\n    if (address or any(api.values())) and not key:\n        raise ValueError('A private key is required with wallet address or API credentials')\n    if any(api.values()) and not all(api.values()):\n        raise ValueError('Provide all three API credentials or leave all three empty')\n    if key:\n        try:\n            derived = Account.from_key(key).address\n        except Exception:\n            raise ValueError('Invalid Polygon private key') from None\n        if address and address.lower() != derived.lower():\n            raise ValueError('Wallet address must match the private key (EOA wallets only)')\n        address = derived\n    try:\n        config = PolymarketConfig(\n            _env_file=None, DEMO_MODE=not bool(key),\n            POLYGON_PRIVATE_KEY=key, POLYGON_ADDRESS=address,\n            POLYMARKET_API_KEY_NAME='localish' if all(api.values()) else None,\n            ENABLE_AUTONOMOUS_TRADING=enabled('ENABLE_TRADING') and enabled('ENABLE_AUTONOMOUS_TRADING'),\n            **api)\n    except Exception:\n        # Pydantic errors can include raw credential inputs. Never log them.\n        raise ValueError('Invalid Polymarket settings; check wallet and service settings') from None\n    for name in ('MAX_ORDER_SIZE_USD', 'MAX_TOTAL_EXPOSURE_USD', 'MAX_POSITION_SIZE_PER_MARKET',\n                 'MIN_LIQUIDITY_REQUIRED', 'REQUIRE_CONFIRMATION_ABOVE_USD'):\n        value = getattr(config, name)\n        if not math.isfinite(value) or value < 0:\n            raise ValueError(name + ' must be finite and non-negative')\n    return config\n\n\nasync def wallet_credentials(self, *args, **kwargs):\n    if not upstream.config or upstream.config.DEMO_MODE:\n        raise RuntimeError('No member wallet configured; public research remains available')\n    try:\n        # Reuse nonce-zero credentials across Localish sessions before creating any.\n        try:\n            credentials = await asyncio.to_thread(self.get_client().derive_api_key)\n        except Exception:\n            credentials = await asyncio.to_thread(self.get_client().create_api_key)\n        self.api_creds = credentials\n        self._initialize_client()\n        for name, value in zip(API_FIELDS, (credentials.api_key, credentials.api_secret, credentials.api_passphrase)):\n            setattr(upstream.config, name, value)\n        upstream.config.POLYMARKET_API_KEY_NAME = 'localish'\n        return credentials\n    except Exception:\n        raise RuntimeError('Wallet authentication failed; check wallet or API credentials') from None\n\n\ndef authenticated():\n    return bool(upstream.config and not upstream.config.DEMO_MODE and\n                upstream.polymarket_client and upstream.polymarket_client.has_api_credentials())\n\n\nupstream.server.name = 'polymarket-localish'\nupstream.load_config = load_config\nupstream.PolymarketClient.create_api_credentials = wallet_credentials\noriginal_call_tool = upstream.call_tool\n\n\n@upstream.server.list_tools()\nasync def list_tools():\n    tools = upstream.market_discovery.get_tools()\n    # This upstream holder endpoint is a placeholder, including with a wallet.\n    tools += [tool for tool in upstream.market_analysis.get_tools() if tool.name != 'get_market_holders']\n    tools += [tool for tool in upstream.realtime.get_tools()\n              if tool.name in PUBLIC_REALTIME or authenticated()]\n    if authenticated():\n        tools += upstream.portfolio_integration.get_portfolio_tool_definitions()\n        tools += [tool for tool in upstream.get_tool_definitions()\n                  if tool.name in ORDER_READS or enabled('ENABLE_TRADING')]\n    tools.append(types.Tool(name='check_connection', description='Check public API and configured wallet access without placing orders.',\n                            inputSchema={'type': 'object', 'properties': {}, 'additionalProperties': False}))\n    return tools\n\n\ndef error(message):\n    return types.CallToolResult(isError=True, content=[types.TextContent(type='text', text=message)])\n\n\n@upstream.server.call_tool()\nasync def call_tool(name, arguments):\n    # Recheck the same boundary on direct calls; tool visibility is not authorization.\n    if name not in {tool.name for tool in await list_tools()}:\n        return error('Tool unavailable. Trading requires a member wallet and ENABLE_TRADING=true.')\n    if name == 'check_connection':\n        if upstream.config and not upstream.config.DEMO_MODE:\n            if not authenticated():\n                return error('Configured wallet could not authenticate')\n            wallet = await call_tool('get_open_orders', {})\n            if wallet.isError:\n                return error('Configured wallet failed its authenticated connection check')\n        return await call_tool('get_trending_markets', {'timeframe': '24h', 'limit': 1})\n    content = await original_call_tool(name, arguments)\n    failed = False\n    for item in content:\n        if item.type != 'text':\n            continue\n        try:\n            payload = json.loads(item.text)\n        except (ValueError, TypeError):\n            failed |= item.text.startswith('Error:')\n        else:\n            failed |= isinstance(payload, dict) and ('error' in payload or payload.get('success') is False)\n    return types.CallToolResult(content=content, isError=failed)\n\n\nif __name__ == '__main__':\n    upstream.run()\n"
     ],
     "scopes": [
-      "polymarket:read"
+      "polymarket:read",
+      "polymarket:trade"
     ],
-    "credentialFields": [],
+    "credentialFields": [
+      {
+        "name": "POLYGON_PRIVATE_KEY",
+        "label": "Polygon wallet private key",
+        "secret": true,
+        "required": false
+      },
+      {
+        "name": "POLYGON_ADDRESS",
+        "label": "Wallet address (derived from private key if omitted)",
+        "secret": false,
+        "required": false
+      },
+      {
+        "name": "POLYMARKET_API_KEY",
+        "label": "Polymarket API key (optional set of three)",
+        "secret": true,
+        "required": false
+      },
+      {
+        "name": "POLYMARKET_API_SECRET",
+        "label": "Polymarket API secret",
+        "secret": true,
+        "required": false
+      },
+      {
+        "name": "POLYMARKET_PASSPHRASE",
+        "label": "Polymarket API passphrase",
+        "secret": true,
+        "required": false
+      }
+    ],
     "env": {
-      "DEMO_MODE": "true",
-      "ENABLE_AUTONOMOUS_TRADING": "false",
-      "CANCEL_ON_SHUTDOWN": "false",
-      "LOG_LEVEL": "WARNING"
+      "CANCEL_ON_SHUTDOWN": "false"
     },
     "startupSeconds": 300,
     "healthTool": {
-      "name": "get_trending_markets",
-      "arguments": {
-        "timeframe": "24h",
-        "limit": 1
+      "name": "check_connection",
+      "arguments": {}
+    },
+    "shared": false,
+    "settings": [
+      {
+        "key": "ENABLE_TRADING",
+        "label": "Enable wallet-backed trading (true/false)",
+        "required": false,
+        "default": "false"
+      },
+      {
+        "key": "ENABLE_AUTONOMOUS_TRADING",
+        "label": "Allow orders without confirm=true (true/false)",
+        "required": false,
+        "default": "false"
+      },
+      {
+        "key": "MAX_ORDER_SIZE_USD",
+        "label": "Maximum order size (USD)",
+        "required": false,
+        "default": "1000"
+      },
+      {
+        "key": "MAX_TOTAL_EXPOSURE_USD",
+        "label": "Maximum total exposure (USD)",
+        "required": false,
+        "default": "5000"
+      },
+      {
+        "key": "MAX_POSITION_SIZE_PER_MARKET",
+        "label": "Maximum position per market (USD)",
+        "required": false,
+        "default": "2000"
+      },
+      {
+        "key": "MIN_LIQUIDITY_REQUIRED",
+        "label": "Minimum market liquidity (USD)",
+        "required": false,
+        "default": "10000"
+      },
+      {
+        "key": "MAX_SPREAD_TOLERANCE",
+        "label": "Maximum spread (fraction from 0 to 1)",
+        "required": false,
+        "default": "0.05"
+      },
+      {
+        "key": "REQUIRE_CONFIRMATION_ABOVE_USD",
+        "label": "Require confirmation above (USD)",
+        "required": false,
+        "default": "500"
+      },
+      {
+        "key": "LOG_LEVEL",
+        "label": "Log level (WARNING, ERROR, INFO, DEBUG)",
+        "required": false,
+        "default": "WARNING"
       }
-    }
+    ]
   }
 }

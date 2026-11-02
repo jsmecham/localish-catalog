@@ -13,7 +13,7 @@ if __name__ == "__main__":
     if command[-2] != "-c":
         raise SystemExit("Expected the Polymarket manifest's inline Python launcher")
     subprocess.run(
-        command[:-2] + ["-B", str(root / "scripts/polymarket/readonly_checks.py")],
+        command[:-2] + ["-B", str(root / "scripts/polymarket/mode_checks.py")],
         cwd=root,
         check=True,
         timeout=300,
