@@ -24,7 +24,7 @@
       "transport" : "http"
     },
     {
-      "description" : "Read-only prediction-market discovery, analysis, and public monitoring — no wallet required.",
+      "description" : "Prediction-market research with optional per-member wallets and opt-in trading — read-only by default.",
       "manifest" : "services/polymarket/manifest.json",
       "name" : "Polymarket",
       "slug" : "polymarket",

@@ -59,5 +59,5 @@ service starts successfully.
 
 For Polymarket launcher changes, also run `python3 -B scripts/check_polymarket.py`
 with `uvx` available. CI runs this check with the guest's uv version. It downloads
-the manifest's pinned Python package, then tests the read-only boundary and MCP
+the manifest's pinned Python package, then tests wallet modes, trading restrictions, and MCP
 error handling without calling Polymarket or using wallet credentials.
