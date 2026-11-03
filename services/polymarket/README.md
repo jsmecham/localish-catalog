@@ -6,6 +6,9 @@ This entry starts with **wallet-free, read-only research**. Every member has a
 private instance and can optionally connect their own wallet. Trading remains off
 until an administrator enables it in Service Settings.
 
+The manifest and catalog listing embed the unchanged PNG from
+[Polymarket’s official site icon](https://polymarket.com/icons/apple-touch-icon.png).
+
 Requires Localish's optional member credential support (`required: false`, added
 for 0.10.0). Update Localish before installing this manifest; older versions require
 credential entry even when fields are marked optional.
