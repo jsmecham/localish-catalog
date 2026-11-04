@@ -6,7 +6,7 @@
     "command": [
       "npx",
       "-y",
-      "@modelcontextprotocol/server-everything"
+      "@modelcontextprotocol/server-everything@2.1.0"
     ],
     "scopes": [
       "everything:use"
