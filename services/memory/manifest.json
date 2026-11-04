@@ -6,7 +6,7 @@
     "command": [
       "npx",
       "-y",
-      "@modelcontextprotocol/server-memory"
+      "@modelcontextprotocol/server-memory@2.0.1"
     ],
     "scopes": [
       "memory:use"
